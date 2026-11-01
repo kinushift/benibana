@@ -1,0 +1,16 @@
+[package]
+name = "sumire"
+version = "0.9.0"
+edition = "2024"
+
+[dependencies]
+memchr = "2.8"
+unicode-segmentation = "1.13"
+
+[profile.release]
+opt-level = "s"
+debug = false
+strip = true
+panic = 'abort'
+lto = true
+codegen-units = 1
