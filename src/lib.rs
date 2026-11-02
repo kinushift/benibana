@@ -19,7 +19,7 @@ impl std::fmt::Display for SumireError {
 }
 impl std::error::Error for SumireError {}
 
-// 3か国のタグ文字フラッグ
+// 3つのタグ文字フラッグ
 const TAG_FLAGS: [&str; 3] = [
     "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}",
     "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}",
@@ -39,7 +39,7 @@ pub fn sanitize_text(text: String, max_chars: usize) -> Result<String, SumireErr
     sanitize(text, max_chars, true)
 }
 
-// テスト
+// --------------------------------テスト---------------------------------
 #[cfg(test)]
 mod tests {
     use crate::{sanitize_line, sanitize_text};
@@ -48,6 +48,7 @@ mod tests {
     fn normal_test() {
         let true_text = "葛\u{E0100}";
         let flag_text = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+        let malicious_text2 = "a\u{2028}b";
 
         // 正規処理
         assert_eq!(
@@ -60,6 +61,11 @@ mod tests {
             sanitize_line(flag_text.to_string(), 32),
             Ok(flag_text.to_string())
         );
+
+        assert_eq!(
+            sanitize_text(malicious_text2.to_string(), 32),
+            Ok("a\nb".to_string())
+        )
     }
 
     #[test]
@@ -84,17 +90,18 @@ mod tests {
 
     #[test]
     fn invalid_tag() {
-        let malicious_text = "a\u{E0061}";
+        let malicious_text = "\u{E0061}a\u{E0061}";
 
-        //　悪意ある文字列(正常であればInvalidCharacterとなる)
+        // 悪意ある文字列(正常であればInvalidCharacterとなる)
         assert_eq!(
             sanitize_text(malicious_text.to_string(), 32),
             Err(crate::SumireError::InvalidCharacter)
-        )
+        );
     }
 }
 
-// 書記素 = 見た目上1文字のもの。スカラー値がいくつかまとまったものである。(graphemes)
-// サロゲート = Unicodeの、UTF-16で、文字でないもの。 RustのString, charはUTF-8サポートのためカウントすらされない。
-// スカラー値 = サロゲートを含まない文字番号(chars)
-// バイト = スカラー値をUTF-8で表したもの 1つのスカラー値につき1~4バイトである。(.len)
+// *1 書記素 = 見た目上1文字のもの。スカラー値がいくつかまとまったものである。(graphemes)
+// *2 スカラー値 = サロゲートを含まない文字番号(chars)
+//    サロゲート = Unicodeの、UTF-16で、文字でないもの。 RustのString, charはUTF-8サポートのためカウントすらされない。
+//    バイト = スカラー値をUTF-8で表したもの 1つのスカラー値につき1~4バイトである。(.len)
+// *3 タグ文字 = UnicodeのTagsブロック({E0000}'..='\u{E007F})に含まれる特殊文字(正式なものは「イングランド・スコットランド・ウェールズ」の3つのみ)
