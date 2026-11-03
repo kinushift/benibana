@@ -80,7 +80,7 @@ mod tests {
 
     #[test]
     fn empty() {
-        let empty_text = "　";
+        let empty_text = "\u{3164}";
 
         assert_eq!(
             sanitize_text(empty_text.to_string(), 32),
@@ -91,12 +91,19 @@ mod tests {
     #[test]
     fn invalid_tag() {
         let malicious_text = "\u{E0061}a\u{E0061}";
+        // let malicious_text2 = "a\u{E0100}b";
+        let malicious_text2 = "葛\u{E0100}\u{E0100}";
 
         // 悪意ある文字列(正常であればInvalidCharacterとなる)
         assert_eq!(
             sanitize_text(malicious_text.to_string(), 32),
             Err(crate::SumireError::InvalidCharacter)
         );
+
+        assert_eq!(
+            sanitize_text(malicious_text2.to_string(), 32),
+            Err(crate::SumireError::InvalidCharacter)
+        )
     }
 }
 
