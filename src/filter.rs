@@ -164,7 +164,7 @@ pub(crate) fn sanitize(
         for c in g.chars() {
             // 漢字の後ろでしか使用できない異体字セレクタであるか
             let is_ivs = matches!(c, '\u{E0100}'..='\u{E01EF}');
-            // is_ivsを含むいずれかの異体字セレクタであるか（モンゴル文字を追加）
+            // is_ivsを含むいずれかの異体字セレクタであるか
             let is_vs = is_ivs || matches!(c, '\u{FE00}'..='\u{FE0F}');
 
             if is_vs && prev_vs {
