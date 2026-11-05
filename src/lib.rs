@@ -92,7 +92,7 @@ mod tests {
     fn invalid_tag() {
         let malicious_text = "\u{E0061}a\u{E0061}";
         // let malicious_text2 = "a\u{E0100}b";
-        let malicious_text2 = "葛\u{E0100}\u{E0100}";
+        let malicious_text2 = "葛\u{E0100}\u{E0100}\u{180F}";
 
         // 悪意ある文字列(正常であればInvalidCharacterとなる)
         assert_eq!(
@@ -107,8 +107,11 @@ mod tests {
     }
 }
 
-// *1 書記素 = 見た目上1文字のもの。スカラー値がいくつかまとまったものである。(graphemes)
-// *2 スカラー値 = サロゲートを含まない文字番号(chars)
+// *1-1 Cf = Format charavters 書式文字, 表示や処理を制御する
+// *1-2 Mn = Nospacing Mark 前の文字につく記号を表す(例: 日本語の濁点)
+// *1-3 Lo = Other Letter 大文字小文字を分類しない文字の分類
+// *1-4 Cn = Others, not assigned 未割り当て
+// *2 書記素 = 見た目上1文字のもの。スカラー値がいくつかまとまったものである。(graphemes)
+// *3 スカラー値 = サロゲートを含まない文字番号(chars)
 //    サロゲート = Unicodeの、UTF-16で、文字でないもの。 RustのString, charはUTF-8サポートのためカウントすらされない。
-//    バイト = スカラー値をUTF-8で表したもの 1つのスカラー値につき1~4バイトである。(.len)
-// *3 タグ文字 = UnicodeのTagsブロック({E0000}'..='\u{E007F})に含まれる特殊文字(正式なものは「イングランド・スコットランド・ウェールズ」の3つのみ)
+// *4 タグ文字 = UnicodeのTagsブロック({E0000}'..='\u{E007F})に含まれる特殊文字(正式なものは「イングランド・スコットランド・ウェールズ」の3つのみ)

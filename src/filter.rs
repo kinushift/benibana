@@ -10,44 +10,41 @@ fn is_line_break(c: char) -> bool {
 
 // 取り除く対象である、見えない文字・制御文字をまとめた関数
 // ZWJ(U+200D)は絵文字のために、ZWNJ(U+200C)はペルシア語等に使用されているために残している。
+// Unicode ver 18.0 DerivedCoreProperties.txt(Default_Ignorable_Code_Point)を参照
 fn is_removable(c: char) -> bool {
-    matches!(c,
-        // 改行の文字(sanitize_text()では上記の処理で \n に置き換え済み)
-        '\u{2028}' |// 行区切り
-        '\u{2029}' | // 段落区切り
+    matches!(
+        c,
+        '\u{2028}' ..= '\u{2029}' | // 行区切り、段落区切り(allow_new_lineがfalseのときに削除される)
 
-        // 文字の向きを変える文字(表示の順番をごまかす攻撃に使われる)
-        '\u{061C}' | // アラビア文字用の右から左へ(ALM)
-        '\u{200E}' | // 左から右へ(LRM)
-        '\u{200F}' | // 右から左へ(RLM)
-        '\u{202A}'..= '\u{202E}' | // 埋め込み・上書き制御(LRE・RLE・PDF・LRO・RLO)
-
-        // 見えない空白・書式
-        '\u{00AD}' | // ソフトハイフン(行末で折り返すときだけハイフンとして出る)
-        '\u{200B}' | // 幅のない空白
-        '\u{2060}'..= '\u{206F}' | // 0: 単語結合, 1~4: 見えない数学記号, 5: 予約済み, 6~9: 向きの分離制御, A~F: 古い書式制御
-        '\u{FEFF}' | // 幅のない改行禁止の空白(BOM)
-
-        // 空白に見える文字(文字に分類されるためゲームの名前で悪用されたりする)
-        '\u{3164}' | // ハングル文字の透明文字
-        '\u{FFA0}' | // ハングルの半角の透明文字
-
-        // 特殊な書式制御(普段では使用しない)
-        '\u{17B4}'..= '\u{17B5}' | // クメール文字の見えない母音(使用は非推奨)
-        '\u{FFF9}' ..= '\u{FFFB}' | // ルビに関するもの(プレーンテキストでの使用を強く非推奨されている)
-        '\u{1BCA0}'..= '\u{1BCA3}' | // 速記用の書式制御(文字を重ねたり・上下にずらしたり)
-        '\u{1D173}'..= '\u{1D17A}' | // 楽譜用の書式制御
-
-         // 予約済み(まだ文字がない。見えない扱いの枠)
-        '\u{FFF0}' ..= '\u{FFF8}' |
-        '\u{E0080}' ..= '\u{E00FF}' |
-        '\u{E01F0}' ..= '\u{E0FFF}'
-
+        '\u{FFF9}' ..= '\u{FFFB}' | // Cf(*1-1) ルビに関する書式文字
+        '\u{13430}' ..= '\u{13440}' | // Cf(*1-1) & Mn(*1-2) エジプトの象形文字の配置を指定する書式文字 13440のみMn
+        '\u{00AD}' | // Cf(*1-1) ソフトハイフン(行末で折り返すときだけハイフンとして表示される)
+        '\u{034F}' | // Mn(*1-2) 図形素結合子 結合子とあるが、実際は結合しない。 聖書ヘブライ語などの記号
+        '\u{061C}' | // Cf(*1-1) アラビア文字の書式文字(ALM), 表示を左右入れ替えることが可能
+        '\u{115F}' ..= '\u{1160}' | // Lo(*1-3) 古いハングル、不完全な音節を組み立てるための制御文字
+        '\u{17B4}' ..= '\u{17B5}' | // Mn(*1-2) インド諸言語の母音と、クメール語固有の母音を区別する。 ほかの文脈での使用は推奨されていない。
+        '\u{180B}' ..= '\u{180D}' | // Mn(*1-2) モンゴル文字の字形を指定する(FVS1~3)
+        '\u{180E}' | // Cf(*1-1) モンゴル母音区切り
+        '\u{180F}' | // Mn(*1-2) モンゴル文字の字形を指定する(FVS4)
+        '\u{200B}' | // Cf(*1-1) 幅のない空白
+        '\u{200E}' ..= '\u{200F}' | // Cf(*1-1) アラビア語、ヘブライ語、ペルシシャ語等で使用。Eは左から右、Fは右から左を示す
+        '\u{202A}' ..= '\u{202E}' | // Cf(*1-1) 埋め込み・上書き(順序入れ替え)制御
+        '\u{2060}' ..= '\u{206F}' | // Cf(*1-1) & Cn(*1-4) 単語結合 改行、数式、文字の向きを指定する。2065のみ予約済み。
+        '\u{3164}' | // Lo(*1-3) ハングルの穴埋め文字。 アカウント名などで空白文字として悪用される。
+        '\u{FEFF}' | // Cf(*1-1) 幅のない改行禁止の空白(BOM)
+        '\u{FFA0}' | // Lo(*1-3) ハングルの半角の透明文字
+        '\u{FFF0}' ..= '\u{FFF8}' | // Cn(*1-4) 予約済み
+        '\u{1BCA0}'..= '\u{1BCA3}' | // Cf(*1-1) 速記用の書式制御(文字を重ねたり・上下にずらしたり)
+        '\u{1D173}'..= '\u{1D17A}' | // Cf(*1-1) 楽譜用の書式制御
+        // 一部スカラー値に関してはタグ文字として判定が設けられている
+        '\u{E0080}' ..= '\u{E00FF}' | // Cn(*1-4) 予約済み
+        // 一部スカラー値に関しては漢字専用異体字セレクタとして判定が設けられている
+        '\u{E01F0}' ..= '\u{E0FFF}' // Cn(*1-4) 予約済み
     )
 }
 
 // unified_ideograph = (正式名)CJK統合漢字: 中国, 日本, 韓国の3か国で使われている漢字をまとめたもの
-// Unicode ver 18.0 PropList.txtを参照
+// Unicode ver 18.0 PropList.txt(Unified_Igeograph)を参照
 fn is_unified_ideograph(c: char) -> bool {
     matches!(c,
     '\u{3400}'..= '\u{4DBF}' |
@@ -84,14 +81,15 @@ fn is_over_limit_bytes(raw_text: &str, max_chars: usize) -> Result<(), SumireErr
 
 fn text_replace_retain(text: &mut String, allow_new_line: bool) {
     // もし改行を残す処理で、なおかつ以下の改行にかかわるスカラー値があるのであればすべて\nに置き換える
-    if allow_new_line && text.contains(|c| is_line_break(c)) {
-        *text = text.replace(|c| is_line_break(c), "\n");
+    if allow_new_line && text.contains(is_line_break) {
+        *text = text.replace(is_line_break, "\n");
     };
 
     // \nはsanitize_lineの場合にのみ検出される
     text.retain(|c| allow_new_line && c == '\n' || (!c.is_control() && !is_removable(c)));
 }
 
+// 新たにメモリ確保をせずにtrimを行う
 fn trim_in_place(text: &mut String) {
     let end = text.trim_end().len();
     text.truncate(end);
@@ -135,7 +133,7 @@ pub(crate) fn sanitize(
     // 文字数を数える変数
     let mut count = 0;
 
-    // graphemesは書記素(*1)
+    // graphemesは書記素(*2)
     for g in text.graphemes(true) {
         // このカウントで文字数を数える
         count += 1;
@@ -145,12 +143,12 @@ pub(crate) fn sanitize(
             return Err(SumireError::TooLong);
         }
 
-        // 1文字gの構成されるスカラー値(*2)をカウントし、13個以上異常であれば除外をする(絵文字等)
+        // 1文字gの構成されるスカラー値(*3)をカウントし、13個以上異常であれば除外をする(絵文字等)
         if g.chars().count() > SCALARS_PER_CHARACTER {
             return Err(SumireError::InvalidCharacter);
         }
 
-        // タグ文字(*3)の初めの2バイトが確認されていて、なおかつタグ文字(*3)の範囲内のものが入っていて、正式な3つの旗でないバイト列の場合はエラー
+        // タグ文字(*4)の初めの2バイトが確認されていて、なおかつタグ文字(*3)の範囲内のものが入っていて、正式な3つの旗でないバイト列の場合はエラー
         if has_tags
             && g.contains(|c| matches!(c, '\u{E0000}'..='\u{E007F}'))
             && !TAG_FLAGS.contains(&g)
@@ -162,11 +160,11 @@ pub(crate) fn sanitize(
         // vs = Variation Selector(異体字セレクタ)、2つ連続で並んでいる場合エラーとなる。また、初期値をtrueにすることで初めの文字がvsの場合も弾くことができる
         let mut prev_vs = true;
 
-        // スカラー値(*2)ごとのループ
+        // スカラー値(*3)ごとのループ
         for c in g.chars() {
             // 漢字の後ろでしか使用できない異体字セレクタであるか
             let is_ivs = matches!(c, '\u{E0100}'..='\u{E01EF}');
-            // is_ivsを含むいずれかの異体字セレクタであるか
+            // is_ivsを含むいずれかの異体字セレクタであるか（モンゴル文字を追加）
             let is_vs = is_ivs || matches!(c, '\u{FE00}'..='\u{FE0F}');
 
             if is_vs && prev_vs {
