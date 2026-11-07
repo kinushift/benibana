@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 memchr = "2.8"
 unicode-segmentation = "1.13"
+unicode-normalization = "0.1"
 
 [profile.release]
 opt-level = "s"

@@ -1,6 +1,9 @@
-use crate::filter::sanitize;
+use crate::sanitize::sanitize;
 
-mod filter;
+mod char_rules;
+mod clean;
+mod normalize;
+mod sanitize;
 
 #[derive(Debug, PartialEq)]
 pub enum SumireError {
@@ -29,20 +32,40 @@ const TAG_FLAGS: [&str; 3] = [
 // スカラー値
 const SCALARS_PER_CHARACTER: usize = 12;
 
+// --------------------------------公開関数---------------------------------
 // 改行も削除する
 pub fn sanitize_line(text: String, max_chars: usize) -> Result<String, SumireError> {
-    sanitize(text, max_chars, false)
+    sanitize(text, max_chars, false, false, false)
+}
+
+pub fn sanitize_nfkc_line(text: String, max_chars: usize) -> Result<String, SumireError> {
+    sanitize(text, max_chars, false, true, false)
+}
+
+pub fn sanitize_nfkc_jp_line(text: String, max_chars: usize) -> Result<String, SumireError> {
+    sanitize(text, max_chars, false, true, true)
 }
 
 // 改行を残す
 pub fn sanitize_text(text: String, max_chars: usize) -> Result<String, SumireError> {
-    sanitize(text, max_chars, true)
+    sanitize(text, max_chars, true, false, false)
+}
+
+pub fn sanitize_nfkc_text(text: String, max_chars: usize) -> Result<String, SumireError> {
+    sanitize(text, max_chars, true, true, false)
+}
+
+pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, SumireError> {
+    sanitize(text, max_chars, true, true, true)
 }
 
 // --------------------------------テスト---------------------------------
 #[cfg(test)]
 mod tests {
-    use crate::{sanitize_line, sanitize_text};
+    use crate::{
+        sanitize_line, sanitize_nfkc_jp_line, sanitize_nfkc_jp_text, sanitize_nfkc_line,
+        sanitize_nfkc_text, sanitize_text,
+    };
 
     #[test]
     fn normal_test() {
@@ -103,6 +126,42 @@ mod tests {
         assert_eq!(
             sanitize_text(malicious_text2.to_string(), 32),
             Err(crate::SumireError::InvalidCharacter)
+        )
+    }
+
+    #[test]
+    fn normalize_test() {
+        let katakana_new_line = "スシ\n";
+        let katakana = "スシ";
+        let kumimozi = "㍿";
+        let kiteimozi = "株式会社";
+
+        assert_eq!(
+            sanitize_nfkc_text(katakana_new_line.to_string(), 32),
+            Ok(katakana.to_string())
+        );
+
+        assert_eq!(
+            sanitize_nfkc_line(kumimozi.to_string(), 32),
+            Ok(kiteimozi.to_string())
+        )
+    }
+
+    #[test]
+    fn normalize_jp_test() {
+        let katakana_1 = "ｽｼ\n";
+        let hiragana_1 = "すし";
+        let katakana_2 = "テンプラ";
+        let hiragana_2 = "てんぷら";
+
+        assert_eq!(
+            sanitize_nfkc_jp_text(katakana_1.to_string(), 32),
+            Ok(hiragana_1.to_string())
+        );
+
+        assert_eq!(
+            sanitize_nfkc_jp_line(katakana_2.to_string(), 32),
+            Ok(hiragana_2.to_string())
         )
     }
 }
