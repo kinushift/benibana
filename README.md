@@ -30,11 +30,11 @@ pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, S
 | 関数 | 改行の扱い | nfkc変換 | ひらがなに変換 |
 | --- | --- | --- | --- |
 | `sanitize_line` | 削除する | しない | しない |
-| `sanitize_text` | 残す。改行文字はすべて `\n` にそろえる | しない | しない |
 | `sanitize_nfkc_line` | 削除する | する | しない |
-| `sanitize_nfkc_text` | 残す。改行文字はすべて `\n` にそろえる | する | しない |
 | `sanitize_nfkc_jp_line` | 削除する | する | する |
-| `sanitize_nfkc_text` | 残す。改行文字はすべて `\n` にそろえる | する | する |
+| `sanitize_text` | 残す。改行文字はすべて `\n` にそろえる | しない | しない |
+| `sanitize_nfkc_text` | 残す。改行文字はすべて `\n` にそろえる | する | しない |
+| `sanitize_nfkc_jp_text` | 残す。改行文字はすべて `\n` にそろえる | する | する |
 
 
 ## エラー
