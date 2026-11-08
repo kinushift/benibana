@@ -2,18 +2,18 @@ use memchr::memmem::find;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
-    SCALARS_PER_CHARACTER, SumireError, TAG_FLAGS,
+    BenibanaError, SCALARS_PER_CHARACTER, TAG_FLAGS,
     char_rules::{is_line_break, is_removable, is_unified_ideograph},
 };
 
 // 重い処理の前にバイト数だけで明らかに大きすぎる入力を弾く。
 // 1文字は最大12パーツ×4バイト = 48バイトとし、上限×48を超えると異常である。(unicodeの絵文字の結合がMax10個だが、マージンのため12)
-pub(crate) fn is_over_limit_bytes(raw_text: &str, max_chars: usize) -> Result<(), SumireError> {
+pub(crate) fn is_over_limit_bytes(raw_text: &str, max_chars: usize) -> Result<(), BenibanaError> {
     let raw_text_usize = raw_text.len();
 
     // オーバーしているなら
     if raw_text_usize > max_chars.saturating_mul(SCALARS_PER_CHARACTER * 4) {
-        return Err(SumireError::TooLong);
+        return Err(BenibanaError::TooLong);
     }
 
     Ok(())
@@ -39,7 +39,7 @@ pub(crate) fn trim_in_place(text: &mut String) {
 }
 
 // 1文字ずつ処理を開始していく
-pub(crate) fn check_grapheme(text: String, limit: usize) -> Result<String, SumireError> {
+pub(crate) fn check_grapheme(text: String, limit: usize) -> Result<String, BenibanaError> {
     // 初めにmemchrによってタグ文字(*3)があるかどうかを確認する。
     let has_tags = find(text.as_bytes(), b"\xF3\xA0").is_some();
 
@@ -52,12 +52,12 @@ pub(crate) fn check_grapheme(text: String, limit: usize) -> Result<String, Sumir
         count += 1;
         // 文字数を超えたらすぐにエラーにする
         if count > limit {
-            return Err(SumireError::TooLong);
+            return Err(BenibanaError::TooLong);
         }
 
         // 1文字gの構成されるスカラー値(*3)をカウントし、13個以上異常であれば除外をする(絵文字等)
         if g.chars().count() > SCALARS_PER_CHARACTER {
-            return Err(SumireError::InvalidCharacter);
+            return Err(BenibanaError::InvalidCharacter);
         }
 
         // タグ文字(*4)の初めの2バイトが確認されていて、なおかつタグ文字(*3)の範囲内のものが入っていて、正式な3つの旗でないバイト列の場合はエラー
@@ -65,7 +65,7 @@ pub(crate) fn check_grapheme(text: String, limit: usize) -> Result<String, Sumir
             && g.contains(|c| matches!(c, '\u{E0000}'..='\u{E007F}'))
             && !TAG_FLAGS.contains(&g)
         {
-            return Err(SumireError::InvalidCharacter);
+            return Err(BenibanaError::InvalidCharacter);
         };
 
         let mut prev_scalar: char = '\0';
@@ -80,11 +80,11 @@ pub(crate) fn check_grapheme(text: String, limit: usize) -> Result<String, Sumir
             let is_vs = is_ivs || matches!(c, '\u{FE00}'..='\u{FE0F}');
 
             if is_vs && prev_vs {
-                return Err(SumireError::InvalidCharacter);
+                return Err(BenibanaError::InvalidCharacter);
             }
 
             if is_ivs && !is_unified_ideograph(prev_scalar) {
-                return Err(SumireError::InvalidCharacter);
+                return Err(BenibanaError::InvalidCharacter);
             }
 
             prev_scalar = c;

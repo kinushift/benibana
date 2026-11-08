@@ -1,4 +1,4 @@
-use crate::sanitize::sanitize;
+use crate::{normalize::normalize_in_place, sanitize::sanitize};
 
 mod char_rules;
 mod clean;
@@ -6,12 +6,12 @@ mod normalize;
 mod sanitize;
 
 #[derive(Debug, PartialEq)]
-pub enum SumireError {
+pub enum BenibanaError {
     Empty,
     TooLong,
     InvalidCharacter,
 }
-impl std::fmt::Display for SumireError {
+impl std::fmt::Display for BenibanaError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Empty => write!(f, "text is empty"),
@@ -20,7 +20,7 @@ impl std::fmt::Display for SumireError {
         }
     }
 }
-impl std::error::Error for SumireError {}
+impl std::error::Error for BenibanaError {}
 
 // 3つのタグ文字フラッグ
 const TAG_FLAGS: [&str; 3] = [
@@ -34,29 +34,43 @@ const SCALARS_PER_CHARACTER: usize = 12;
 
 // --------------------------------公開関数---------------------------------
 // 改行も削除する
-pub fn sanitize_line(text: String, max_chars: usize) -> Result<String, SumireError> {
+pub fn sanitize_line(text: String, max_chars: usize) -> Result<String, BenibanaError> {
     sanitize(text, max_chars, false, false, false)
 }
 
-pub fn sanitize_nfkc_line(text: String, max_chars: usize) -> Result<String, SumireError> {
+pub fn sanitize_nfkc_line(text: String, max_chars: usize) -> Result<String, BenibanaError> {
     sanitize(text, max_chars, false, true, false)
 }
 
-pub fn sanitize_nfkc_jp_line(text: String, max_chars: usize) -> Result<String, SumireError> {
+pub fn sanitize_nfkc_jp_line(text: String, max_chars: usize) -> Result<String, BenibanaError> {
     sanitize(text, max_chars, false, true, true)
 }
 
 // 改行を残す
-pub fn sanitize_text(text: String, max_chars: usize) -> Result<String, SumireError> {
+pub fn sanitize_text(text: String, max_chars: usize) -> Result<String, BenibanaError> {
     sanitize(text, max_chars, true, false, false)
 }
 
-pub fn sanitize_nfkc_text(text: String, max_chars: usize) -> Result<String, SumireError> {
+pub fn sanitize_nfkc_text(text: String, max_chars: usize) -> Result<String, BenibanaError> {
     sanitize(text, max_chars, true, true, false)
 }
 
-pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, SumireError> {
+pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, BenibanaError> {
     sanitize(text, max_chars, true, true, true)
+}
+
+// ノーマライズのみ(カタカナ変換なし)
+pub fn normalize(mut text: String) -> String {
+    normalize_in_place(&mut text, false);
+
+    text
+}
+
+// ノーマライズのみ(カタカナ変換あり)
+pub fn normalize_jp(mut text: String) -> String {
+    normalize_in_place(&mut text, true);
+
+    text
 }
 
 // --------------------------------テスト---------------------------------
@@ -97,7 +111,7 @@ mod tests {
         // エラー処理
         assert_eq!(
             sanitize_text(long_text.to_string(), 32),
-            Err(crate::SumireError::TooLong)
+            Err(crate::BenibanaError::TooLong)
         );
     }
 
@@ -107,7 +121,7 @@ mod tests {
 
         assert_eq!(
             sanitize_text(empty_text.to_string(), 32),
-            Err(crate::SumireError::Empty)
+            Err(crate::BenibanaError::Empty)
         );
     }
 
@@ -120,12 +134,12 @@ mod tests {
         // 悪意ある文字列(正常であればInvalidCharacterとなる)
         assert_eq!(
             sanitize_text(malicious_text.to_string(), 32),
-            Err(crate::SumireError::InvalidCharacter)
+            Err(crate::BenibanaError::InvalidCharacter)
         );
 
         assert_eq!(
             sanitize_text(malicious_text2.to_string(), 32),
-            Err(crate::SumireError::InvalidCharacter)
+            Err(crate::BenibanaError::InvalidCharacter)
         )
     }
 
@@ -170,6 +184,7 @@ mod tests {
 // *1-2 Mn = Nospacing Mark 前の文字につく記号を表す(例: 日本語の濁点)
 // *1-3 Lo = Other Letter 大文字小文字を分類しない文字の分類
 // *1-4 Cn = Others, not assigned 未割り当て
+// *1-5 So = Symbol other, 専門グループ出ない残りの記号をまとめた分類
 // *2 書記素 = 見た目上1文字のもの。スカラー値がいくつかまとまったものである。(graphemes)
 // *3 スカラー値 = サロゲートを含まない文字番号(chars)
 //    サロゲート = Unicodeの、UTF-16で、文字でないもの。 RustのString, charはUTF-8サポートのためカウントすらされない。

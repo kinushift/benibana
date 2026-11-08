@@ -1,6 +1,6 @@
 use unicode_normalization::UnicodeNormalization;
 
-pub(crate) fn normalize(text: &mut String, katakana_to_hiragana: bool) {
+pub(crate) fn normalize_in_place(text: &mut String, katakana_to_hiragana: bool) {
     if text.is_ascii() {
         return;
     }

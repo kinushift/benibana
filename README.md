@@ -1,4 +1,4 @@
-# sumire
+# 紅花: benibana
 Rust製のUnicode対応入力検証ライブラリ
 
 ## 概要  
@@ -8,24 +8,29 @@ Rust製のUnicode対応入力検証ライブラリ
 
 nfkc正規化と、カタカナを平仮名に変換することが可能。
 
+`char_rules.rs` についてはUnicode 18.0.0を参照、依存クレートについてはUnicode 17.0.0をサポート。
+
 ## 関数
 ```rust
 // 改行も削除する
-pub fn sanitize_line(text: String, max_chars: usize) -> Result<String, SumireError>
+pub fn sanitize_line(text: String, max_chars: usize) -> Result<String, BenibanaError>
 
-pub fn sanitize_nfkc_line(text: String, max_chars: usize) -> Result<String, SumireError>
+pub fn sanitize_nfkc_line(text: String, max_chars: usize) -> Result<String, BenibanaError>
 
-pub fn sanitize_nfkc_jp_line(text: String, max_chars: usize) -> Result<String, SumireError>
+pub fn sanitize_nfkc_jp_line(text: String, max_chars: usize) -> Result<String, BenibanaError>
 
 // 改行を残す
-pub fn sanitize_text(text: String, max_chars: usize) -> Result<String, SumireError>
+pub fn sanitize_text(text: String, max_chars: usize) -> Result<String, BenibanaError>
 
-pub fn sanitize_nfkc_text(text: String, max_chars: usize) -> Result<String, SumireError>
+pub fn sanitize_nfkc_text(text: String, max_chars: usize) -> Result<String, BenibanaError>
 
-pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, SumireError>
+pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, BenibanaError>
+
+pub fn normalize(mut text: String) -> String
+
+pub fn normalize_jp(mut text: String) -> String
 
 ```
-
 
 | 関数 | 改行の扱い | nfkc変換 | ひらがなに変換 |
 | --- | --- | --- | --- |
@@ -35,7 +40,10 @@ pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, S
 | `sanitize_text` | 残す。改行文字はすべて `\n` にそろえる | しない | しない |
 | `sanitize_nfkc_text` | 残す。改行文字はすべて `\n` にそろえる | する | しない |
 | `sanitize_nfkc_jp_text` | 残す。改行文字はすべて `\n` にそろえる | する | する |
+| `normalize` | 残す | する | しない |
+| `normalize_jp` | 残す | する | する |
 
+※ normalize*に関しては名前の通りサニタイズはしません。使い方としてはサニタイズしたものに対して使用することをお勧めします。
 
 ## エラー
 - `Empty` : テキストがありません
@@ -56,7 +64,7 @@ pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, S
    - イングランド ・ スコットランド ・ ウェールズの旗以外のタグ文字
 
 **処理の限界** :
-1. ZWJ, ZWNJ, および異体字セレクタについては正しい文章の表示のために残しています。そのため1文字につき異体字セレクタ1つはスルーされるようになっています。それにより、少量のデータを隠せてしまいます。\
+1. ZWJ, ZWNJ, および異体字セレクタについては正しい文章の表示のために残しています。そのため1文字につき異体字セレクタ1つはスルーされるようになっています。それにより、少量のデータを隠せてしまいます。
 3. `\r` だけの改行とタブは削除されます。
 4. 文字の向きの制御を取り除くため、アラビア語・ヘブライ語に英数字や括弧が混ざる文章では、括弧や数字の位置が変わることがあります。（文字自体は崩れません）
 5. モンゴル文字を使用するものには非推奨(入力が削除される場合があります)
@@ -75,6 +83,9 @@ pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, S
 ## ライセンス
 - 本リポジトリはロジックの透明性のために公開されています。
 - このライブラリは現在開発中のため、ライセンスを付与しておらず、コード利用・改変・再配布は許可していません。
+
+## benibanaという名前について
+- 花言葉である「包容力 ・ 化粧」という言葉をもとに、制御文字や、悪意ある文字を受け止めるクッション(包容力)として、また、きれいな文字に化粧するという思いが込められています。
 
 ## コピーライト
 Copyright © 2026 Kinushift. All rights reserved.
