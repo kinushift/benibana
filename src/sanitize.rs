@@ -26,24 +26,17 @@ pub(crate) fn sanitize(
         return Err(BenibanaError::Empty);
     }
 
-    // nfkc変換の場合正規化で文字数が増える可能性があるため1.25倍を制限とする
-    let limit: usize = if apply_nfkc {
-        max_chars.saturating_add(max_chars / 4)
-    } else {
-        max_chars
-    };
-
     // ASCIIのみなら即時リターンで終了
     if text.is_ascii() {
         // 英数字は1文字1バイトのため.lenで文字数となる
-        if text.len() <= limit {
+        if text.len() <= max_chars {
             return Ok(text);
         } else {
             return Err(BenibanaError::TooLong);
         }
     }
 
-    let res_text = check_grapheme(text, limit)?;
+    let res_text = check_grapheme(text, max_chars)?;
 
     Ok(res_text)
 }

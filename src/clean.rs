@@ -39,7 +39,7 @@ pub(crate) fn trim_in_place(text: &mut String) {
 }
 
 // 1文字ずつ処理を開始していく
-pub(crate) fn check_grapheme(text: String, limit: usize) -> Result<String, BenibanaError> {
+pub(crate) fn check_grapheme(text: String, max_chars: usize) -> Result<String, BenibanaError> {
     // 初めにmemchrによってタグ文字(*3)があるかどうかを確認する。
     let has_tags = find(text.as_bytes(), b"\xF3\xA0").is_some();
 
@@ -51,7 +51,7 @@ pub(crate) fn check_grapheme(text: String, limit: usize) -> Result<String, Benib
         // このカウントで文字数を数える
         count += 1;
         // 文字数を超えたらすぐにエラーにする
-        if count > limit {
+        if count > max_chars {
             return Err(BenibanaError::TooLong);
         }
 
