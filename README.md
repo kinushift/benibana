@@ -1,7 +1,7 @@
 # 紅花: benibana
 Rust製のUnicode対応入力検証ライブラリ
 
-## 概要  
+## 概要
 テキスト＆文字数制限(usize)を使用し、Unicodeの構造を考慮した入力検証を行う。
 
 書記素クラスタ ・ Unicodeスカラー値を利用し、特殊な文字などを検証。
@@ -26,10 +26,6 @@ pub fn sanitize_nfkc_text(text: String, max_chars: usize) -> Result<String, Beni
 
 pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, BenibanaError>
 
-pub fn normalize(mut text: String) -> String
-
-pub fn normalize_jp(mut text: String) -> String
-
 ```
 
 | 関数 | 改行の扱い | nfkc変換 | ひらがなに変換 |
@@ -40,10 +36,6 @@ pub fn normalize_jp(mut text: String) -> String
 | `sanitize_text` | 残す。改行文字はすべて `\n` にそろえる | しない | しない |
 | `sanitize_nfkc_text` | 残す。改行文字はすべて `\n` にそろえる | する | しない |
 | `sanitize_nfkc_jp_text` | 残す。改行文字はすべて `\n` にそろえる | する | する |
-| `normalize` | 残す | する | しない |
-| `normalize_jp` | 残す | する | する |
-
-※ normalize*に関しては名前の通りサニタイズはしません。使い方としてはサニタイズしたものに対して使用することをお勧めします。
 
 ## エラー
 - `Empty` : テキストがありません
@@ -53,11 +45,12 @@ pub fn normalize_jp(mut text: String) -> String
 ##  処理について
 **処理されること** :
 1. 制御文字・見えない文字 ・ 向きなどを変える文字を取り除く
-2. (nfkc_のみ) nfkc正規化を行う
-3. (jp_のみ) カタカナから0x60を引き、ひらがなにする
-3. 前後の空白を取り除く
-4. 書記素での上限確認
-5. 異常な文字の検出
+2. 前後の空白を取り除く
+3. (nfkc_のみ) nfkc正規化を行う
+4. (jp_のみ) カタカナから0x60を引き、ひらがなにする
+5. 前後の空白を取り除く
+6. 書記素での上限確認
+7. 異常な文字の検出
    - スカラー値13個以上でできた1文字(長すぎる絵文字の連結など)
    - 異体字セレクタの連続
    - ivsが漢字の後ろ以外に配置されている
@@ -76,7 +69,7 @@ pub fn normalize_jp(mut text: String) -> String
 ## テスト
 変更のたびに、蓄積したコーパスを引き継いで fuzzing を実行しています。
 
-- 最新版での実行: 約3億回、クラッシュは0
+- 最新版での実行: 約2.5億回、クラッシュは0
 - 検査項目: panicしないか、取り除いた文字が残らないか、前後に空白が残っていないか、2回実行しても同じ結果になるか(Displayを除く)
 - テストについて: これらの結果は、試した範囲で問題が見つからなかったことを示すものです。すべての入力に対して正しく動くことや、安全であることを保証するものではありません。
 

@@ -7,10 +7,9 @@ pub(crate) fn is_line_break(c: char) -> bool {
 
 // 取り除く対象である、見えない文字・制御文字をまとめた関数
 // ZWJ(U+200D)は絵文字のために、ZWNJ(U+200C)はペルシア語等に使用されているために残している。
-// Unicode ver 18.0 DerivedCoreProperties.txt(Default_Ignorable_Code_Point)を参照
+// Unicode ver 18.0 DerivedCoreProperties.txt(Default_Ignorable_Code_Point)を参照 & more
 pub(crate) fn is_removable(c: char) -> bool {
-    matches!(
-        c,
+    matches!(c,
         '\u{2028}' ..= '\u{2029}' | // 行区切り、段落区切り(allow_new_lineがfalseのときに削除される)
 
         '\u{FFF9}' ..= '\u{FFFC}' | // Cf(*1-1) & So(*1-5) ルビに関する書式文字 FFFCのみSo。文字でないものを表す文字

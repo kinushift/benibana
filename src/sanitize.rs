@@ -1,7 +1,7 @@
 use crate::{
     BenibanaError,
     clean::{check_grapheme, is_over_limit_bytes, text_replace_retain, trim_in_place},
-    normalize::normalize_in_place,
+    normalize::normalize,
 };
 
 // --------------------------------core処理---------------------------------
@@ -16,11 +16,12 @@ pub(crate) fn sanitize(
 
     // &mut Stringで渡すと元のStringを書き換えるためメモリ確保がしなくてよい
     text_replace_retain(&mut text, allow_new_line);
+    trim_in_place(&mut text);
     // nfkc変換がtrueの場合にノーマライズされる
     if apply_nfkc {
-        normalize_in_place(&mut text, katakana_to_hiragana);
+        normalize(&mut text, katakana_to_hiragana, max_chars)?;
+        trim_in_place(&mut text);
     }
-    trim_in_place(&mut text);
 
     if text.is_empty() {
         return Err(BenibanaError::Empty);

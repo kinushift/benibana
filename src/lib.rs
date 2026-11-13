@@ -1,4 +1,4 @@
-use crate::{normalize::normalize_in_place, sanitize::sanitize};
+use crate::sanitize::sanitize;
 
 mod char_rules;
 mod clean;
@@ -59,20 +59,6 @@ pub fn sanitize_nfkc_jp_text(text: String, max_chars: usize) -> Result<String, B
     sanitize(text, max_chars, true, true, true)
 }
 
-// ノーマライズのみ(カタカナ変換なし)
-pub fn normalize(mut text: String) -> String {
-    normalize_in_place(&mut text, false);
-
-    text
-}
-
-// ノーマライズのみ(カタカナ変換あり)
-pub fn normalize_jp(mut text: String) -> String {
-    normalize_in_place(&mut text, true);
-
-    text
-}
-
 // --------------------------------テスト---------------------------------
 #[cfg(test)]
 mod tests {
@@ -85,7 +71,8 @@ mod tests {
     fn normal_test() {
         let true_text = "葛\u{E0100}";
         let flag_text = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
-        let malicious_text2 = "a\u{2028}b";
+        let line_break = "a\u{2028}b";
+        let normal_zwnj = "❤\u{FE0F}\u{200D}🔥";
 
         // 正規処理
         assert_eq!(
@@ -100,17 +87,28 @@ mod tests {
         );
 
         assert_eq!(
-            sanitize_text(malicious_text2.to_string(), 32),
+            sanitize_text(line_break.to_string(), 32),
             Ok("a\nb".to_string())
+        );
+
+        assert_eq!(
+            sanitize_text(normal_zwnj.to_string(), 32),
+            Ok(normal_zwnj.to_string())
         )
     }
 
     #[test]
     fn too_long() {
         let long_text = "a".repeat(33);
+        let long_text2 = format!("あ{}い", " ".repeat(64));
         // エラー処理
         assert_eq!(
             sanitize_text(long_text.to_string(), 32),
+            Err(crate::BenibanaError::TooLong)
+        );
+
+        assert_eq!(
+            sanitize_text(long_text2, 32),
             Err(crate::BenibanaError::TooLong)
         );
     }
@@ -129,7 +127,8 @@ mod tests {
     fn invalid_tag() {
         let malicious_text = "\u{E0061}a\u{E0061}";
         // let malicious_text2 = "a\u{E0100}b";
-        let malicious_text2 = "葛\u{E0100}\u{E0100}\u{180F}";
+        let malicious_text2 = "葛\u{E0100}\u{E0100}";
+        let malicious_text3 = "\u{200C}a";
 
         // 悪意ある文字列(正常であればInvalidCharacterとなる)
         assert_eq!(
@@ -139,6 +138,11 @@ mod tests {
 
         assert_eq!(
             sanitize_text(malicious_text2.to_string(), 32),
+            Err(crate::BenibanaError::InvalidCharacter)
+        );
+
+        assert_eq!(
+            sanitize_text(malicious_text3.to_string(), 32),
             Err(crate::BenibanaError::InvalidCharacter)
         )
     }

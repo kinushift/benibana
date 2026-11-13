@@ -71,6 +71,8 @@ pub(crate) fn check_grapheme(text: String, max_chars: usize) -> Result<String, B
         let mut prev_scalar: char = '\0';
         // vs = Variation Selector(異体字セレクタ)、2つ連続で並んでいる場合エラーとなる。また、初期値をtrueにすることで初めの文字がvsの場合も弾くことができる
         let mut prev_vs = true;
+        // zwnj = ゼロ幅非接合子、上記のvsのzwnj版
+        let mut prev_zwnj = true;
 
         // スカラー値(*3)ごとのループ
         for c in g.chars() {
@@ -79,7 +81,13 @@ pub(crate) fn check_grapheme(text: String, max_chars: usize) -> Result<String, B
             // is_ivsを含むいずれかの異体字セレクタであるか
             let is_vs = is_ivs || matches!(c, '\u{FE00}'..='\u{FE0F}');
 
+            let is_zwnj = matches!(c, '\u{200C}');
+
             if is_vs && prev_vs {
+                return Err(BenibanaError::InvalidCharacter);
+            }
+
+            if is_zwnj && prev_zwnj {
                 return Err(BenibanaError::InvalidCharacter);
             }
 
@@ -89,6 +97,7 @@ pub(crate) fn check_grapheme(text: String, max_chars: usize) -> Result<String, B
 
             prev_scalar = c;
             prev_vs = is_vs;
+            prev_zwnj = is_zwnj;
         }
     }
 
