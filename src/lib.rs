@@ -129,6 +129,7 @@ mod tests {
         // let malicious_text2 = "a\u{E0100}b";
         let malicious_text2 = "葛\u{E0100}\u{E0100}";
         let malicious_text3 = "\u{200C}a";
+        let malicious_text4 = "\u{200C}\u{200D}";
 
         // 悪意ある文字列(正常であればInvalidCharacterとなる)
         assert_eq!(
@@ -143,6 +144,11 @@ mod tests {
 
         assert_eq!(
             sanitize_text(malicious_text3.to_string(), 32),
+            Err(crate::BenibanaError::InvalidCharacter)
+        );
+
+        assert_eq!(
+            sanitize_text(malicious_text4.to_string(), 32),
             Err(crate::BenibanaError::InvalidCharacter)
         )
     }
